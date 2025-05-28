@@ -2,6 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+RUN groupadd -r app && useradd -r -g app app
+
+RUN mkdir -p /app/bot.log \
+    && chown -R app:app /app/
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
