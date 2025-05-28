@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-
+      - production
 
 jobs:
   deploy:
@@ -35,4 +35,23 @@ jobs:
           cd /home/ubuntu/ai_bot/AiMessagerBot/docker
           docker compose  build
           docker compose  up -d
+          EOF
+
+      - name: Deploy to production
+        if: github.ref == 'refs/heads/production'
+        env:
+          PROD_SERVER: ${{ secrets.PROD_SERVER }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $PROD_SERVER << 'EOF'
+          cd /home/ubuntu/backend/prod/lead_management
+          pwd
+          whoami
+          sudo su
+          git checkout production || fail
+          git reset --hard origin/main || fail
+          git pull origin main || fail
+          docker compose -f docker-compose-prod.yml build
+          docker compose -f docker-compose-prod.yml up -d
+          docker compose -f docker-compose-prod.yml exec lead_backend python manage.py migrate
+          docker compose -f docker-compose-prod.yml exec lead_backend python manage.py collectstatic --noinput
           EOF
