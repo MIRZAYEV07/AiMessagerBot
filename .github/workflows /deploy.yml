@@ -1,0 +1,40 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to staging
+        if: github.ref == 'refs/heads/main'
+        env:
+          STAGING_SERVER: ${{ secrets.STAGING_SERVER }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $STAGING_SERVER << 'EOF'
+          cd /home/ubuntu/ai_bot/AiMessagerBot
+          pwd
+          whoami
+          sudo su
+          git checkout main || fail
+          git reset --hard origin/main || fail
+          git pull origin main || fail
+          cd /home/ubuntu/ai_bot/AiMessagerBot/docker
+          docker compose  build
+          docker compose  up -d
+          EOF
+
+      
